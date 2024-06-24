@@ -7,17 +7,21 @@ with open("reviews.csv", mode="r") as file:
     reviews = [row for row in reader]
 
 license_dist = Counter()
-for index, review in enumerate(reviews[:5000]):
+len_reviews = len(reviews)
+for index, review in enumerate(reviews):
+    if review["license"] == "404":
+        print(review["DOI"])
     license_dist.update([review["license"]])
 
 
 if "" in license_dist:
     del license_dist[""]
 
-most_common_l = license_dist.most_common(10)
-keys_l, values_l = zip(*most_common_l)
+most_common = license_dist.most_common(10)
+print(most_common)
+keys, values = zip(*most_common)
 
-plt.bar(keys_l, values_l)
+plt.bar(keys, values)
 plt.title('Top 10 Most Common Licenses')
 plt.xlabel('License')
 plt.ylabel('Count')
