@@ -11,6 +11,7 @@ def download_pmid(pmid, destination_folder='temp'):
     try:
         # Parse Pubmed fetch response for FPT link
         response = requests.get(url)
+        print(response.text)
         response.raise_for_status()
         root = ET.fromstring(response.text)
 
@@ -21,7 +22,7 @@ def download_pmid(pmid, destination_folder='temp'):
         if not ftp_url:
             raise ValueError(f"No FTP URL found for PMID: {pmid}")
 
-        print(f"Successfully obtained FTP url {ftp_url} from Pubmed")
+        print(f"Successfully obtained FTP url {ftp_url}")
 
         # Download using FTP
         parsed_url = urlparse(ftp_url)
@@ -39,10 +40,9 @@ def download_pmid(pmid, destination_folder='temp'):
             with open(local_filename, 'wb') as local_file:
                 ftp.retrbinary(f"RETR {filename}", local_file.write)
         
-        print(f"Successfully downloaded {filename} for PMID {pmid}")
+        print(f"Successfully downloaded {filename}")
 
         # Extract the downloaded file into temp
-        print(local_filename)
         with tarfile.open(local_filename, "r:gz") as tar:
             for member in tar.getmembers():
                 member.name = os.path.basename(member.name)
@@ -51,14 +51,7 @@ def download_pmid(pmid, destination_folder='temp'):
         # Remove the empty directory based on local_filename
         dir_name = os.path.splitext(os.path.splitext(os.path.basename(local_filename))[0])[0] # This is weird but removes .tar.gz
         dir_to_remove = os.path.join(destination_folder, dir_name) 
-        if os.path.exists(dir_to_remove):
-            try:
-                os.rmdir(dir_to_remove)
-                print(f"Removed directory: {dir_to_remove}")
-            except OSError as e:
-                print(f"Error removing directory {dir_to_remove}: {e}")
-        else:
-            print(f"Directory not found: {dir_to_remove}")
+        os.rmdir(dir_to_remove)
 
         # Remove the compressed file after extraction
         os.remove(local_filename)
@@ -72,11 +65,24 @@ def download_pmid(pmid, destination_folder='temp'):
     except Exception as e:
         raise RuntimeError(f"An error occurred while processing PMID {pmid}: {str(e)}")
 
-def get_filetype():
-    pass
+def get_formats():
+    formats_to_check = {'.html', '.pdf', '.docx', '.xml'}
+    available_formats = set()
 
-pmid = "9637117"
+    try:
+        for filename in os.listdir('temp'):
+            ext = os.path.splitext(filename)[1].lower()
+            if ext in formats_to_check:
+                available_formats.add(ext[1:])  # Remove leading dot
+    except Exception as e:
+        print(f"An error occurred while processing PMID {pmid}: {str(e)}")
+    
+    return list(available_formats)
+
+pmid = "10796091"
 try:
     download_pmid(pmid)
+    formats = get_formats()
+    print(formats)
 except (ValueError, ConnectionError, RuntimeError) as e:
     print(f"Error: {str(e)}")
